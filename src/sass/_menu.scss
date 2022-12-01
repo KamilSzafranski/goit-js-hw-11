@@ -1,0 +1,48 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #7b68ee;
+}
+.container {
+  padding: 10px 0px;
+  display: flex;
+  justify-content: center;
+}
+
+.search-form {
+  display: flex;
+  max-width: 260px;
+
+  &__input {
+    width: 220px;
+    padding: 5px;
+    font-size: 16px;
+    outline: none;
+    border: none;
+    background-color: white;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+  }
+  &__btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgb(221, 221, 221);
+    border: none;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    cursor: pointer;
+    transition: color cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
+    &:hover,
+    &:focus {
+      color: #7b68ee;
+    }
+  }
+  &__icon {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+  }
+}
