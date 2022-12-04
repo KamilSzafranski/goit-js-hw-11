@@ -131,12 +131,15 @@ const displayFirstPhoto = event => {
       lightBox = new SimpleLightbox(".gallery a");
 
       if (response.totalHits > 40) {
+        const { height: galleryHight } = document
+          .querySelector(".gallery")
+          .getBoundingClientRect();
         const { height: cardHeight } = document
           .querySelector(".gallery")
           .firstElementChild.getBoundingClientRect();
 
         window.scrollBy({
-          top: cardHeight * 2,
+          top: galleryHight - cardHeight * 4,
           behavior: "smooth",
         });
       }
