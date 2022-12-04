@@ -131,17 +131,7 @@ const displayFirstPhoto = event => {
       lightBox = new SimpleLightbox(".gallery a");
 
       if (response.totalHits > 40) {
-        const { height: galleryHight } = document
-          .querySelector(".gallery")
-          .getBoundingClientRect();
-        const { height: cardHeight } = document
-          .querySelector(".gallery")
-          .firstElementChild.getBoundingClientRect();
-
-        window.scrollBy({
-          top: galleryHight - cardHeight * 4,
-          behavior: "smooth",
-        });
+        scrollGallery();
       }
     }, 500);
   });
@@ -195,6 +185,7 @@ const displayPhotoScroll = () => {
   });
 
   fetchPhoto(params).then(() => lightBox.refresh());
+  setTimeout(scrollGallery, 500);
 };
 
 const displayPhotoClick = event => {
@@ -212,8 +203,23 @@ const displayPhotoClick = event => {
 
   fetchPhoto(params).then(() => lightBox.refresh());
   event.target.blur();
+  setTimeout(scrollGallery, 500);
 };
 
+const scrollGallery = () => {
+  const { bottom: galleryHight } = document
+    .querySelector(".gallery")
+    .getBoundingClientRect();
+  const { height: cardHeight } = document
+    .querySelector(".gallery")
+    .firstElementChild.getBoundingClientRect();
+
+  const galleryRow = Math.floor(galleryHight / cardHeight);
+  window.scrollBy({
+    top: cardHeight * (galleryRow - 4),
+    behavior: "smooth",
+  });
+};
 const observer = new IntersectionObserver(([entry]) => {
   if (!entry.isIntersecting) return;
   displayPhotoScroll();
