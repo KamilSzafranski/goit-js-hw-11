@@ -1,0 +1,57 @@
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: not-allowed;
+  &__window {
+    padding: 10px;
+    text-align: center;
+    background-color: white;
+    border-radius: 10px;
+    cursor: auto;
+  }
+  &__text {
+    margin-bottom: 100px;
+    font-size: 32px;
+    max-width: 450px;
+    font-weight: 700;
+    color: #7b68ee;
+  }
+  &__btnWrapper {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  &__btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background-color: rgb(221, 221, 221);
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: color cubic-bezier(0.075, 0.82, 0.165, 1) 250ms,
+      transform cubic-bezier(0.075, 0.82, 0.165, 1) 250ms;
+    &:hover,
+    &:focus {
+      transform: scale(1.1);
+      color: #7b68ee;
+    }
+  }
+}
+.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
