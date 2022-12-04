@@ -73,6 +73,42 @@ const renderGallery = data => {
 
 const clearGallery = () => (gallery.innerHTML = "");
 
+const scrollGallery = () => {
+  const { width: galleryWidth } = document
+    .querySelector(".gallery")
+    .getBoundingClientRect();
+  const { height: cardHeight, width: cardWidth } = document
+    .querySelector(".gallery")
+    .firstElementChild.getBoundingClientRect();
+  const galleryColumns = Math.floor(galleryWidth / cardWidth);
+  const galleryRow = Math.floor(window.innerHeight / cardHeight);
+  const numberOfInterval = Math.floor(40 / (galleryRow * galleryColumns));
+
+  window.scrollBy({
+    top: cardHeight * 2.2,
+    behavior: "smooth",
+  });
+
+  if (i >= numberOfInterval) {
+    i = 1;
+    return clearInterval(interval);
+  }
+  i++;
+};
+
+const observer = new IntersectionObserver(([entry]) => {
+  if (!entry.isIntersecting) return;
+  displayPhotoScroll();
+});
+
+const loadMore = () => {
+  if (loadOnClick)
+    return btnLoadMore.addEventListener("click", displayPhotoClick);
+
+  if (loadOnScroll)
+    return observer.observe(document.querySelector("button.load-more"));
+};
+
 const fetchFirstPhoto = async params => {
   try {
     const getPhoto = await axios.get(`https://pixabay.com/api/?${params}`);
@@ -133,7 +169,7 @@ const displayFirstPhoto = event => {
       lightBox = new SimpleLightbox(".gallery a");
     }, 500);
     if (response.totalHits > 40) {
-      interval = setInterval(scrollGallery, 500);
+      interval = setInterval(scrollGallery, 300);
     }
   });
 
@@ -167,7 +203,6 @@ const fetchPhoto = async params => {
     page++;
 
     renderGallery(response.hits);
-    interval = setInterval(scrollGallery, 500);
     return response;
   } catch (error) {
     Notiflix.Notify.failure(error.message);
@@ -185,8 +220,10 @@ const displayPhotoScroll = () => {
     per_page: perPage,
   });
 
-  fetchPhoto(params).then(() => lightBox.refresh());
-  setTimeout(scrollGallery, 500);
+  fetchPhoto(params).then(() => {
+    lightBox.refresh();
+    interval = setInterval(scrollGallery, 300);
+  });
 };
 
 const displayPhotoClick = event => {
@@ -202,44 +239,12 @@ const displayPhotoClick = event => {
     per_page: perPage,
   });
 
-  fetchPhoto(params).then(() => lightBox.refresh());
+  fetchPhoto(params).then(() => {
+    lightBox.refresh();
+    setTimeout(() => (interval = setInterval(scrollGallery, 500)), 300);
+  });
   event.target.blur();
   setTimeout(scrollGallery, 500);
-};
-
-const scrollGallery = () => {
-  const { width: galleryWidth } = document
-    .querySelector(".gallery")
-    .getBoundingClientRect();
-  const { height: cardHeight, width: cardWidth } = document
-    .querySelector(".gallery")
-    .firstElementChild.getBoundingClientRect();
-  const galleryColumns = Math.floor(galleryWidth / cardWidth);
-  const galleryRow = Math.floor(window.innerHeight / cardHeight);
-  const numberOfInterval = Math.floor(40 / (galleryRow * galleryColumns));
-  console.log("number:", numberOfInterval, "i:", i);
-  window.scrollBy({
-    top: cardHeight * 2,
-    behavior: "smooth",
-  });
-
-  if (i >= numberOfInterval) {
-    i = 1;
-    return clearInterval(interval);
-  }
-  i++;
-};
-const observer = new IntersectionObserver(([entry]) => {
-  if (!entry.isIntersecting) return;
-  displayPhotoScroll();
-});
-
-const loadMore = () => {
-  if (loadOnClick)
-    return btnLoadMore.addEventListener("click", displayPhotoClick);
-
-  if (loadOnScroll)
-    return observer.observe(document.querySelector("button.load-more"));
 };
 
 btnSearch.addEventListener("click", displayFirstPhoto);
