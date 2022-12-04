@@ -20,6 +20,8 @@ let lightBox;
 let loadOnScroll = false;
 let loadOnClick = false;
 let isAnyPhotoAvailable;
+let interval = null;
+let i = 1;
 
 const modalFunction = event => {
   event.preventDefault();
@@ -129,11 +131,10 @@ const displayFirstPhoto = event => {
     setTimeout(() => {
       btnLoadMore.style.display = "flex";
       lightBox = new SimpleLightbox(".gallery a");
-
-      if (response.totalHits > 40) {
-        scrollGallery();
-      }
     }, 500);
+    if (response.totalHits > 40) {
+      interval = setInterval(scrollGallery, 500);
+    }
   });
 
   event.target.blur();
@@ -166,7 +167,7 @@ const fetchPhoto = async params => {
     page++;
 
     renderGallery(response.hits);
-
+    interval = setInterval(scrollGallery, 500);
     return response;
   } catch (error) {
     Notiflix.Notify.failure(error.message);
@@ -207,18 +208,26 @@ const displayPhotoClick = event => {
 };
 
 const scrollGallery = () => {
-  const { bottom: galleryHight } = document
+  const { width: galleryWidth } = document
     .querySelector(".gallery")
     .getBoundingClientRect();
-  const { height: cardHeight } = document
+  const { height: cardHeight, width: cardWidth } = document
     .querySelector(".gallery")
     .firstElementChild.getBoundingClientRect();
-
-  const galleryRow = Math.floor(galleryHight / cardHeight);
+  const galleryColumns = Math.floor(galleryWidth / cardWidth);
+  const galleryRow = Math.floor(window.innerHeight / cardHeight);
+  const numberOfInterval = Math.floor(40 / (galleryRow * galleryColumns));
+  console.log("number:", numberOfInterval, "i:", i);
   window.scrollBy({
-    top: cardHeight * (galleryRow - 4),
+    top: cardHeight * 2,
     behavior: "smooth",
   });
+
+  if (i >= numberOfInterval) {
+    i = 1;
+    return clearInterval(interval);
+  }
+  i++;
 };
 const observer = new IntersectionObserver(([entry]) => {
   if (!entry.isIntersecting) return;
