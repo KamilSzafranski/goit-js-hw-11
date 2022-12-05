@@ -73,7 +73,7 @@ const renderGallery = data => {
 
 const clearGallery = () => (gallery.innerHTML = "");
 
-const scrollGallery = () => {
+const scrollGallery = amount => {
   const { width: galleryWidth } = document
     .querySelector(".gallery")
     .getBoundingClientRect();
@@ -81,23 +81,27 @@ const scrollGallery = () => {
     .querySelector(".gallery")
     .firstElementChild.getBoundingClientRect();
   const galleryColumns = Math.floor(galleryWidth / cardWidth);
-  const galleryRow = Math.floor(window.innerHeight / cardHeight);
-  const numberOfInterval = Math.floor(40 / (galleryRow * galleryColumns));
+  const galleryRowOnScreen = Math.floor(window.innerHeight / cardHeight);
+  const galleryRow = Math.floor(amount / galleryColumns);
 
-  window.scrollBy({
-    top: cardHeight * 2.2,
-    behavior: "smooth",
-  });
+  return () => {
+    window.scrollBy({
+      top: cardHeight,
+      behavior: "smooth",
+    });
 
-  if (i >= numberOfInterval) {
-    i = 1;
-    return clearInterval(interval);
-  }
-  i++;
+    if (i > galleryRow - galleryRowOnScreen - 1) {
+      i = 1;
+      return clearInterval(interval);
+    }
+
+    i++;
+  };
 };
 
 const observer = new IntersectionObserver(([entry]) => {
   if (!entry.isIntersecting) return;
+
   displayPhotoScroll();
 });
 
@@ -161,7 +165,6 @@ const displayFirstPhoto = event => {
 
   fetchFirstPhoto(params).then(response => {
     if (response.totalHits === 0) return;
-
     Notiflix.Notify.success(`Hooray! We found ${response.totalHits} images.`);
 
     setTimeout(() => {
@@ -169,7 +172,7 @@ const displayFirstPhoto = event => {
       lightBox = new SimpleLightbox(".gallery a");
     }, 500);
     if (response.totalHits > 40) {
-      interval = setInterval(scrollGallery, 300);
+      interval = setInterval(scrollGallery(response.hits.length), 300);
     }
   });
 
@@ -220,9 +223,9 @@ const displayPhotoScroll = () => {
     per_page: perPage,
   });
 
-  fetchPhoto(params).then(() => {
+  fetchPhoto(params).then(response => {
     lightBox.refresh();
-    interval = setInterval(scrollGallery, 300);
+    interval = setInterval(scrollGallery(response.hits.length), 300);
   });
 };
 
@@ -239,12 +242,14 @@ const displayPhotoClick = event => {
     per_page: perPage,
   });
 
-  fetchPhoto(params).then(() => {
+  fetchPhoto(params).then(response => {
     lightBox.refresh();
-    setTimeout(() => (interval = setInterval(scrollGallery, 500)), 300);
+    setTimeout(
+      () => (interval = setInterval(scrollGallery(response.hits.length), 500)),
+      300
+    );
   });
   event.target.blur();
-  setTimeout(scrollGallery, 500);
 };
 
 btnSearch.addEventListener("click", displayFirstPhoto);
