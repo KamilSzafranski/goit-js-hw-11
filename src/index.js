@@ -11,7 +11,6 @@ const btnLoadMore = document.querySelector("button.load-more");
 const modal = document.querySelector(".modal");
 const btnLoadMoreText = document.querySelector(".load-more__text");
 
-let emptyFormInput;
 let page = 1;
 let perPage = 40;
 let totalPhoto = 500;
@@ -20,8 +19,18 @@ let lightBox;
 let loadOnScroll = false;
 let loadOnClick = false;
 let isAnyPhotoAvailable;
-let interval = null;
-let i = 1;
+
+const params = {
+  key: "31755618-c569c5727c417e8772568fe10",
+  set() {
+    return (this.q = formInput.value);
+  },
+  image_type: "photo",
+  orientation: "horizontal",
+  safesearch: "true",
+  page: page,
+  per_page: perPage,
+};
 
 const modalFunction = event => {
   event.preventDefault();
@@ -43,30 +52,25 @@ const modalFunction = event => {
 
 const renderGallery = data => {
   const markup = data
-    .map(element => {
-      return ` <a href="${element.largeImageURL}" class="photo-card">
-   <img src="${element.webformatURL}" alt="${element.tags}" title="${element.tags}" loading="lazy" />
-    <div class="info">
-    <p class="info-item">
-    <b>Likes</b>
-    ${element.likes}
-    </p>
-    <p class="info-item">
-    <b>Views</b>
-    ${element.views}
-    </p>
-    <p class="info-item">
-    <b>Comments</b>
-    ${element.comments}
-    </p>
-    <p class="info-item">
-    <b>Downloads</b>
-    ${element.downloads}
-    </p>
-    </div>
-    </a>
+    .map(
+      ({
+        webformatURL: smallPhoto,
+        largeImageURL: largePhoto,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      }) => {
+        return ` <a href="${largePhoto}" class="photo-card">
+   <img src="${smallPhoto}" alt="${tags}" title="${tags}" loading="lazy" />
+    <div class="info"><p class="info-item"><b>Likes</b>${likes}</p>
+    <p class="info-item"><b>Views</b>${views}</p>
+    <p class="info-item"><b>Comments</b>${comments}</p>
+    <p class="info-item"><b>Downloads</b>${downloads}</p></div></a>
   `;
-    })
+      }
+    )
     .join("");
   gallery.insertAdjacentHTML("beforeend", markup);
 };
@@ -84,30 +88,20 @@ const scrollGallery = amount => {
   const galleryRowOnScreen = Math.floor(window.innerHeight / cardHeight);
   const galleryRow = Math.floor(amount / galleryColumns);
 
-  return () => {
-    window.scrollBy({
-      top: cardHeight,
-      behavior: "smooth",
-    });
-
-    if (i > galleryRow - galleryRowOnScreen - 1) {
-      i = 1;
-      return clearInterval(interval);
-    }
-
-    i++;
-  };
+  window.scrollBy({
+    top: cardHeight * (galleryRow - galleryRowOnScreen),
+    behavior: "smooth",
+  });
 };
 
 const observer = new IntersectionObserver(([entry]) => {
   if (!entry.isIntersecting) return;
 
-  displayPhotoScroll();
+  setTimeout(displayPhoto, 300);
 });
 
 const loadMore = () => {
-  if (loadOnClick)
-    return btnLoadMore.addEventListener("click", displayPhotoClick);
+  if (loadOnClick) return btnLoadMore.addEventListener("click", displayPhoto);
 
   if (loadOnScroll)
     return observer.observe(document.querySelector("button.load-more"));
@@ -119,10 +113,9 @@ const fetchFirstPhoto = async params => {
     const response = await getPhoto.data;
     totalPhoto = await response.totalHits;
     PhotoLeft = Math.ceil(totalPhoto / perPage);
-    const noSearch = response.hits.length === 0;
     isAnyPhotoAvailable = true;
 
-    if (noSearch) {
+    if (response.hits.length === 0) {
       Notiflix.Notify.warning(
         "Sorry, there are no images matching your search query. Please try again."
       );
@@ -143,46 +136,9 @@ const fetchFirstPhoto = async params => {
   }
 };
 
-const displayFirstPhoto = event => {
-  event.preventDefault();
-  btnLoadMore.style.display = "none";
-  emptyFormInput = formInput.value === "";
-  page = 1;
-
-  const params = new URLSearchParams({
-    key: "31755618-c569c5727c417e8772568fe10",
-    q: [formInput.value],
-    image_type: "photo",
-    orientation: "horizontal",
-    safesearch: "true",
-    page: page,
-    per_page: perPage,
-  });
-
-  if (emptyFormInput) return Notiflix.Notify.info("Please enter a photo name!");
-
-  clearGallery();
-
-  fetchFirstPhoto(params).then(response => {
-    if (response.totalHits === 0) return;
-    Notiflix.Notify.success(`Hooray! We found ${response.totalHits} images.`);
-
-    setTimeout(() => {
-      btnLoadMore.style.display = "flex";
-      lightBox = new SimpleLightbox(".gallery a");
-    }, 500);
-    if (response.totalHits > 40) {
-      interval = setInterval(scrollGallery(response.hits.length), 300);
-    }
-  });
-
-  event.target.blur();
-};
-
 const fetchPhoto = async params => {
   try {
-    const noMorePhoto = btnLoadMore.dataset.more === "false";
-    if (noMorePhoto) {
+    if (btnLoadMore.dataset.more === "false") {
       return;
     }
 
@@ -212,44 +168,45 @@ const fetchPhoto = async params => {
   }
 };
 
-const displayPhotoScroll = () => {
-  const params = new URLSearchParams({
-    key: "31755618-c569c5727c417e8772568fe10",
-    q: [formInput.value],
-    image_type: "photo",
-    orientation: "horizontal",
-    safesearch: "true",
-    page: page,
-    per_page: perPage,
+const displayFirstPhoto = event => {
+  event.preventDefault();
+  btnLoadMore.style.display = "none";
+  page = 1;
+  params.set(formInput.value);
+  const options = new URLSearchParams(params);
+  if (formInput.value === "")
+    return Notiflix.Notify.info("Please enter a photo name!");
+
+  clearGallery();
+
+  fetchFirstPhoto(options).then(response => {
+    if (response.totalHits === 0) return;
+    Notiflix.Notify.success(`Hooray! We found ${response.totalHits} images.`);
+
+    setTimeout(() => {
+      btnLoadMore.style.display = "flex";
+      lightBox = new SimpleLightbox(".gallery a");
+    }, 500);
+    if (response.totalHits > 40) {
+      scrollGallery(response.hits.length);
+    }
   });
 
-  fetchPhoto(params).then(response => {
-    lightBox.refresh();
-    interval = setInterval(scrollGallery(response.hits.length), 300);
-  });
+  event.target.blur();
 };
 
-const displayPhotoClick = event => {
-  event.preventDefault();
+const displayPhoto = event => {
+  if (loadOnClick) {
+    event.preventDefault();
+    event.target.blur();
+  }
+  params.set(formInput.value);
+  const options = new URLSearchParams(params);
 
-  const params = new URLSearchParams({
-    key: "31755618-c569c5727c417e8772568fe10",
-    q: [formInput.value],
-    image_type: "photo",
-    orientation: "horizontal",
-    safesearch: "true",
-    page: page,
-    per_page: perPage,
-  });
-
-  fetchPhoto(params).then(response => {
+  fetchPhoto(options).then(response => {
     lightBox.refresh();
-    setTimeout(
-      () => (interval = setInterval(scrollGallery(response.hits.length), 500)),
-      300
-    );
+    scrollGallery(response.hits.length);
   });
-  event.target.blur();
 };
 
 btnSearch.addEventListener("click", displayFirstPhoto);
