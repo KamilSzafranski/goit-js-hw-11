@@ -22,9 +22,6 @@ let isAnyPhotoAvailable;
 
 const params = {
   key: "31755618-c569c5727c417e8772568fe10",
-  set() {
-    return (this.q = formInput.value);
-  },
   image_type: "photo",
   orientation: "horizontal",
   safesearch: "true",
@@ -97,7 +94,7 @@ const scrollGallery = amount => {
 const observer = new IntersectionObserver(([entry]) => {
   if (!entry.isIntersecting) return;
 
-  setTimeout(displayPhoto, 300);
+  setTimeout(displayPhoto, 400);
 });
 
 const loadMore = () => {
@@ -172,7 +169,7 @@ const displayFirstPhoto = event => {
   event.preventDefault();
   btnLoadMore.style.display = "none";
   page = 1;
-  params.set(formInput.value);
+  params.q = formInput.value;
   const options = new URLSearchParams(params);
   if (formInput.value === "")
     return Notiflix.Notify.info("Please enter a photo name!");
@@ -188,7 +185,7 @@ const displayFirstPhoto = event => {
       lightBox = new SimpleLightbox(".gallery a");
     }, 500);
     if (response.totalHits > 40) {
-      scrollGallery(response.hits.length);
+      setTimeout(() => scrollGallery(response.hits.length), 400);
     }
   });
 
@@ -200,12 +197,13 @@ const displayPhoto = event => {
     event.preventDefault();
     event.target.blur();
   }
-  params.set(formInput.value);
+
   const options = new URLSearchParams(params);
 
   fetchPhoto(options).then(response => {
     lightBox.refresh();
-    scrollGallery(response.hits.length);
+
+    setTimeout(() => scrollGallery(response.hits.length), 400);
   });
 };
 
