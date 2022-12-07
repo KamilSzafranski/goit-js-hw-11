@@ -74,19 +74,9 @@ const renderGallery = data => {
 
 const clearGallery = () => (gallery.innerHTML = "");
 
-const scrollGallery = amount => {
-  const { width: galleryWidth } = document
-    .querySelector(".gallery")
-    .getBoundingClientRect();
-  const { height: cardHeight, width: cardWidth } = document
-    .querySelector(".gallery")
-    .firstElementChild.getBoundingClientRect();
-  const galleryColumns = Math.floor(galleryWidth / cardWidth);
-  const galleryRowOnScreen = Math.floor(window.innerHeight / cardHeight);
-  const galleryRow = Math.floor(amount / galleryColumns);
-
+const scrollGallery = () => {
   window.scrollBy({
-    top: cardHeight * (galleryRow - galleryRowOnScreen),
+    top: window.innerHeight - 150,
     behavior: "smooth",
   });
 };
@@ -94,7 +84,7 @@ const scrollGallery = amount => {
 const observer = new IntersectionObserver(([entry]) => {
   if (!entry.isIntersecting) return;
 
-  setTimeout(displayPhoto, 400);
+  displayPhoto();
 });
 
 const loadMore = () => {
@@ -104,9 +94,9 @@ const loadMore = () => {
     return observer.observe(document.querySelector("button.load-more"));
 };
 
-const fetchFirstPhoto = async params => {
+const fetchFirstPhoto = async options => {
   try {
-    const getPhoto = await axios.get(`https://pixabay.com/api/?${params}`);
+    const getPhoto = await axios.get(`https://pixabay.com/api/?${options}`);
     const response = await getPhoto.data;
     totalPhoto = await response.totalHits;
     PhotoLeft = Math.ceil(totalPhoto / perPage);
@@ -125,7 +115,7 @@ const fetchFirstPhoto = async params => {
       btnLoadMore.dataset.more = true;
       btnLoadMoreText.textContent = "Load more";
     }
-    page++;
+    params.page++;
     renderGallery(response.hits);
     return response;
   } catch (error) {
@@ -133,7 +123,7 @@ const fetchFirstPhoto = async params => {
   }
 };
 
-const fetchPhoto = async params => {
+const fetchPhoto = async options => {
   try {
     if (btnLoadMore.dataset.more === "false") {
       return;
@@ -150,13 +140,13 @@ const fetchPhoto = async params => {
       );
     }
 
-    const getPhoto = await axios.get(`https://pixabay.com/api/?${params}`);
+    const getPhoto = await axios.get(`https://pixabay.com/api/?${options}`);
     const response = await getPhoto.data;
     totalPhoto = await response.totalHits;
 
     PhotoLeft = Math.ceil(totalPhoto / perPage);
 
-    page++;
+    params.page++;
 
     renderGallery(response.hits);
     return response;
@@ -168,7 +158,7 @@ const fetchPhoto = async params => {
 const displayFirstPhoto = event => {
   event.preventDefault();
   btnLoadMore.style.display = "none";
-  page = 1;
+  params.page = 1;
   params.q = formInput.value;
   const options = new URLSearchParams(params);
   if (formInput.value === "")
@@ -184,9 +174,6 @@ const displayFirstPhoto = event => {
       btnLoadMore.style.display = "flex";
       lightBox = new SimpleLightbox(".gallery a");
     }, 500);
-    if (response.totalHits > 40) {
-      setTimeout(() => scrollGallery(response.hits.length), 400);
-    }
   });
 
   event.target.blur();
@@ -200,10 +187,9 @@ const displayPhoto = event => {
 
   const options = new URLSearchParams(params);
 
-  fetchPhoto(options).then(response => {
+  fetchPhoto(options).then(() => {
     lightBox.refresh();
-
-    setTimeout(() => scrollGallery(response.hits.length), 400);
+    setTimeout(scrollGallery, 300);
   });
 };
 
