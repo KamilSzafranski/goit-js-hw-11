@@ -11,23 +11,21 @@ const btnLoadMore = document.querySelector("button.load-more");
 const modal = document.querySelector(".modal");
 const btnLoadMoreText = document.querySelector(".load-more__text");
 
-let page = 1;
-let perPage = 40;
-let totalPhoto = 500;
-let PhotoLeft = Math.ceil(totalPhoto / perPage);
-let lightBox;
-let loadOnScroll = false;
-let loadOnClick = false;
-let isAnyPhotoAvailable;
-
 const params = {
   key: "31755618-c569c5727c417e8772568fe10",
   image_type: "photo",
   orientation: "horizontal",
   safesearch: "true",
-  page: page,
-  per_page: perPage,
+  page: 1,
+  per_page: 40,
 };
+
+let totalPhoto = 500;
+let PhotoLeft = Math.ceil(totalPhoto / params.per_page);
+let lightBox;
+let loadOnScroll = false;
+let loadOnClick = false;
+let isAnyPhotoAvailable;
 
 const modalFunction = event => {
   event.preventDefault();
@@ -99,7 +97,7 @@ const fetchFirstPhoto = async options => {
     const getPhoto = await axios.get(`https://pixabay.com/api/?${options}`);
     const response = await getPhoto.data;
     totalPhoto = await response.totalHits;
-    PhotoLeft = Math.ceil(totalPhoto / perPage);
+    PhotoLeft = Math.ceil(totalPhoto / params.per_page);
     isAnyPhotoAvailable = true;
 
     if (response.hits.length === 0) {
@@ -132,7 +130,8 @@ const fetchPhoto = async options => {
     if (!isAnyPhotoAvailable) {
       return;
     }
-    if (page > PhotoLeft) {
+
+    if (params.page > PhotoLeft) {
       btnLoadMoreText.textContent = "No more photos :(";
       isAnyPhotoAvailable = false;
       return Notiflix.Notify.info(
@@ -144,7 +143,7 @@ const fetchPhoto = async options => {
     const response = await getPhoto.data;
     totalPhoto = await response.totalHits;
 
-    PhotoLeft = Math.ceil(totalPhoto / perPage);
+    PhotoLeft = Math.ceil(totalPhoto / params.per_page);
 
     params.page++;
 
