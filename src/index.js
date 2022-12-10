@@ -10,6 +10,8 @@ const btnSearch = document.querySelector("button.search-form__btn");
 const btnLoadMore = document.querySelector("button.load-more");
 const modal = document.querySelector(".modal");
 const btnLoadMoreText = document.querySelector(".load-more__text");
+const ScrollLoadMore = document.querySelector("div.scroll");
+const ScrollNoPhoto = document.querySelector("div.scroll-NoPhoto");
 
 const params = {
   key: "31755618-c569c5727c417e8772568fe10",
@@ -79,17 +81,43 @@ const scrollGallery = () => {
   });
 };
 
-const observer = new IntersectionObserver(([entry]) => {
-  if (!entry.isIntersecting) return;
-
-  displayPhoto();
-});
-
 const loadMore = () => {
   if (loadOnClick) return btnLoadMore.addEventListener("click", displayPhoto);
 
-  if (loadOnScroll)
-    return observer.observe(document.querySelector("button.load-more"));
+  if (loadOnScroll) {
+    return window.addEventListener("scroll", () => {
+      if (
+        window.scrollY + window.innerHeight >=
+        document.documentElement.scrollHeight
+      ) {
+        return displayPhoto();
+      }
+    });
+  }
+};
+
+const displayFirstPhoto = event => {
+  event.preventDefault();
+  btnLoadMore.style.display = "none";
+  ScrollLoadMore.style.display = "none";
+  ScrollNoPhoto.style.display = "none";
+  params.page = 1;
+  params.q = formInput.value;
+  const options = new URLSearchParams(params);
+  if (formInput.value === "")
+    return Notiflix.Notify.info("Please enter a photo name!");
+
+  clearGallery();
+
+  fetchFirstPhoto(options).then(response => {
+    if (response.totalHits === 0) return;
+    Notiflix.Notify.success(`Hooray! We found ${response.totalHits} images.`);
+    setTimeout(() => {
+      lightBox = new SimpleLightbox(".gallery a");
+    }, 500);
+  });
+
+  event.target.blur();
 };
 
 const fetchFirstPhoto = async options => {
@@ -106,33 +134,79 @@ const fetchFirstPhoto = async options => {
       );
     }
 
-    if (totalPhoto < 40) {
-      btnLoadMore.dataset.more = false;
-      btnLoadMoreText.textContent = "No more photos :(";
-    } else {
-      btnLoadMore.dataset.more = true;
-      btnLoadMoreText.textContent = "Load more";
+    if (loadOnClick) {
+      btnLoadMore.style.display = "flex";
+      if (totalPhoto < 40) {
+        btnLoadMore.dataset.more = false;
+        btnLoadMoreText.textContent = "No more photos :(";
+      } else {
+        btnLoadMore.dataset.more = true;
+        btnLoadMoreText.textContent = "Load more";
+      }
     }
+
+    if (loadOnScroll) {
+      if (totalPhoto < 40) {
+        ScrollLoadMore.dataset.more = false;
+        ScrollNoPhoto.style.display = "block";
+      } else {
+        ScrollLoadMore.dataset.more = true;
+        ScrollLoadMore.style.display = "flex";
+      }
+    }
+
     params.page++;
     renderGallery(response.hits);
+
     return response;
   } catch (error) {
     Notiflix.Notify.failure(error.message);
   }
 };
 
+const displayPhoto = event => {
+  let time;
+
+  if (loadOnClick) {
+    event.preventDefault();
+    event.target.blur();
+    time = 0;
+  }
+
+  if (loadOnScroll) time = 800;
+
+  const options = new URLSearchParams(params);
+
+  setTimeout(() => {
+    fetchPhoto(options).then(() => {
+      lightBox.refresh();
+      setTimeout(scrollGallery, 300);
+    });
+  }, time);
+};
+
 const fetchPhoto = async options => {
   try {
-    if (btnLoadMore.dataset.more === "false") {
+    if (
+      btnLoadMore.dataset.more === "false" ||
+      ScrollLoadMore.dataset.more === "false"
+    ) {
       return;
     }
 
-    if (!isAnyPhotoAvailable) {
-      return;
-    }
+    if (!isAnyPhotoAvailable) return;
 
-    if (params.page > PhotoLeft) {
+    if (loadOnClick && params.page > PhotoLeft) {
       btnLoadMoreText.textContent = "No more photos :(";
+      isAnyPhotoAvailable = false;
+      return Notiflix.Notify.info(
+        "We're sorry, but you've reached the end of search results."
+      );
+    }
+
+    if (ScrollLoadMore && params.page > PhotoLeft) {
+      ScrollLoadMore.style.display = "none";
+      ScrollNoPhoto.style.display = "block";
       isAnyPhotoAvailable = false;
       return Notiflix.Notify.info(
         "We're sorry, but you've reached the end of search results."
@@ -152,44 +226,6 @@ const fetchPhoto = async options => {
   } catch (error) {
     Notiflix.Notify.failure(error.message);
   }
-};
-
-const displayFirstPhoto = event => {
-  event.preventDefault();
-  btnLoadMore.style.display = "none";
-  params.page = 1;
-  params.q = formInput.value;
-  const options = new URLSearchParams(params);
-  if (formInput.value === "")
-    return Notiflix.Notify.info("Please enter a photo name!");
-
-  clearGallery();
-
-  fetchFirstPhoto(options).then(response => {
-    if (response.totalHits === 0) return;
-    Notiflix.Notify.success(`Hooray! We found ${response.totalHits} images.`);
-
-    setTimeout(() => {
-      btnLoadMore.style.display = "flex";
-      lightBox = new SimpleLightbox(".gallery a");
-    }, 500);
-  });
-
-  event.target.blur();
-};
-
-const displayPhoto = event => {
-  if (loadOnClick) {
-    event.preventDefault();
-    event.target.blur();
-  }
-
-  const options = new URLSearchParams(params);
-
-  fetchPhoto(options).then(() => {
-    lightBox.refresh();
-    setTimeout(scrollGallery, 300);
-  });
 };
 
 btnSearch.addEventListener("click", displayFirstPhoto);
